@@ -54,10 +54,14 @@ plugin.refreshSettings = function (callback) {
 		}
 
 		// Split out files list to array
-		settings.files = settings.files.split(/\r?\n/).filter(function (file) {
-			file = file.trim();
-			return !!file;
-		});
+		if (settings.files) {
+			settings.files = settings.files.split(/\r?\n/).filter(function (file) {
+				file = file.trim();
+				return !!file;
+			});
+		} else {
+			settings.files = [];
+		}
 
 		// Save to plugin-wide settings object
 		Object.assign(plugin.settings, plugin._defaults, settings);
