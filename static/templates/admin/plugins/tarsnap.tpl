@@ -11,8 +11,22 @@
 			<button class="btn btn-default" data-action="list">List Archives</button>
 		</div>
 	</div>
-
+	
 	<hr />
+
+	<div class="row">
+		<div class="col-sm-2 col-xs-12 settings-header">Scheduling Options</div>
+		<div class="col-sm-10 col-xs-12">
+			<div class="form-group">
+				<label for="schedule">Run Tarsnap backup...</label>
+				<select id="schedule" name="schedule" title="Scheduled Backup" class="form-control">
+					<option>Manually (no scheduling)</option>
+					<option value="daily">Daily</option>
+					<option value="weekly">Weekly</option>
+				</select>
+			</div>
+		</div>
+	</div>
 
 	<div class="row">
 		<div class="col-sm-2 col-xs-12 settings-header">Required Settings</div>

@@ -4,8 +4,10 @@ var execFile = require('child_process').execFile;
 var exec = require('child_process').exec;
 var path = require('path');
 var async = require('async');
+var CronJob = require('cron').CronJob;
 
 var meta = module.parent.require('./meta');
+var winston = module.parent.require('winston');
 
 var controllers = require('./lib/controllers');
 
@@ -20,14 +22,16 @@ var plugin = {
 plugin.init = function (params, callback) {
 	var router = params.router;
 	var hostMiddleware = params.middleware;
-	var hostControllers = params.controllers;
 
 	router.get('/admin/plugins/tarsnap', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
 	router.get('/api/admin/plugins/tarsnap', controllers.renderAdminPage);
 	router.get('/api/admin/plugins/tarsnap/list', controllers.listArchives);
 	router.post('/api/admin/plugins/tarsnap/run', controllers.runArchive);
 
-	plugin.refreshSettings(callback);
+	async.series([
+		async.apply(plugin.refreshSettings),
+		async.apply(plugin.startJob),
+	], callback);
 };
 
 plugin.addAdminNavigation = function (header, callback) {
@@ -69,6 +73,28 @@ plugin.refreshSettings = function (callback) {
 	});
 };
 
+plugin.startJob = function (callback) {
+	if (plugin.settings.schedule) {
+		winston.verbose('[plugin/tarsnap] Registering scheduled job.');
+
+		switch (plugin.settings.schedule) {
+		case 'daily':
+			new CronJob('0 0 0 * * *', plugin.run, true);
+			break;
+		case 'weekly':
+			new CronJob('0 0 0 * * 0', plugin.run, true);
+			break;
+		default:
+			winston.warn('[plugin/tarsnap] Scheduling option not recognised: `' + plugin.settings.schedule + '`. Scheduling disabled.');
+			break;
+		}
+
+		process.nextTick(callback);
+	} else {
+		setImmediate(callback);
+	}
+};
+
 plugin.list = function (callback) {
 	var args = buildArgs(['--list-archives']);
 
@@ -79,9 +105,14 @@ plugin.run = function (callback) {
 	async.waterfall([
 		function (next) {
 			// Execute pre-run script, if present
-			exec(plugin.settings.preRun, function (err) {
-				next(err);	// specifically only returning err here.
-			});
+			if (plugin.settings.preRun) {
+				winston.verbose('[plugin/tarsnap] Executing pre-run script.');
+				exec(plugin.settings.preRun, function (err) {
+					next(err);	// specifically only returning err here.
+				});
+			} else {
+				setImmediate(next);
+			}
 		},
 		function (next) {
 			exec('echo ' + plugin.settings.archiveFormat, next);
@@ -95,9 +126,14 @@ plugin.run = function (callback) {
 				args.push('-C', path.dirname(file), path.basename(file));
 			});
 
-			execFile(plugin.settings.executable, args, callback);
+			winston.verbose('[plugin/tarsnap] Executing backup.');
+			execFile(plugin.settings.executable, args, next);
 		},
-	]);
+		function (stdout, stderr, next) {
+			winston.verbose('[plugin/tarsnap] Backup complete.');
+			setImmediate(next, null, stdout, stderr);
+		},
+	], callback);
 };
 
 plugin.test = function () {};
