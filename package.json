@@ -1,15 +1,18 @@
 {
-  "name": "nodebb-plugin-quickstart",
+  "name": "nodebb-plugin-tarsnap",
   "version": "0.0.0",
   "description": "",
   "main": "library.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/julianlam/nodebb-plugin-quickstart"
+    "url": "https://github.com/julianlam/nodebb-plugin-tarsnap"
   },
   "keywords": [
     "nodebb",
-    "plugin"
+    "plugin",
+    "backup",
+    "cloud",
+    "tarsnap"
   ],
   "author": {
     "name": "Julian Lam",
@@ -17,13 +20,15 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/julianlam/nodebb-plugin-quickstart/issues"
+    "url": "https://github.com/julianlam/nodebb-plugin-tarsnap/issues"
   },
   "readmeFilename": "README.md",
   "nbbpm": {
     "compatibility": "^1.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "async": "^2.5.0"
+  },
   "devDependencies": {
     "eslint": "^4.9.0",
     "eslint-config-airbnb-base": "^12.1.0",
