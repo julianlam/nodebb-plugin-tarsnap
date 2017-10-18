@@ -147,6 +147,8 @@ function buildArgs(args) {
 		args.push('--cachedir', plugin.settings.cachedir);
 	}
 
+	args.push('--humanize-numbers');
+
 	return args;
 }
 
