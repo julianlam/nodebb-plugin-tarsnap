@@ -109,11 +109,11 @@ plugin.testConfig = function (callback) {
 				},
 				function (next) {
 					// Check if keyfile is present and readable
-					fs.access(plugin.settings.keyfile, fs.constants.F_OK | fs.constants.R_OK, next);
+					fs.access(plugin.settings.keyfile | '/root/tarsnap.key', fs.constants.F_OK | fs.constants.R_OK, next);
 				},
 				function (next) {
 					// Check if cache directory is present and writable
-					fs.access(plugin.settings.cachedir, fs.constants.F_OK | fs.constants.R_OK | fs.constants.W_OK, next);
+					fs.access(plugin.settings.cachedir | '/usr/local/tarsnap-cache', fs.constants.F_OK | fs.constants.R_OK | fs.constants.W_OK, next);
 				},
 			], next);
 		},
