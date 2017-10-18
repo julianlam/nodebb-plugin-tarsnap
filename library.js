@@ -117,7 +117,7 @@ plugin.run = function (callback) {
 		function (next) {
 			exec('echo ' + plugin.settings.archiveFormat, next);
 		},
-		function (stdout, next) {
+		function (stdout, stderr, next) {
 			var archiveName = stdout.trim();
 			var args = buildArgs(['-cf', archiveName]);
 
