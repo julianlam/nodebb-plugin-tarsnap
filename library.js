@@ -79,10 +79,10 @@ plugin.startJob = function (callback) {
 
 		switch (plugin.settings.schedule) {
 		case 'daily':
-			new CronJob('0 0 0 * * *', plugin.run, true);
+			new CronJob('0 0 * * *', plugin.run, null, true);
 			break;
 		case 'weekly':
-			new CronJob('0 0 0 * * 0', plugin.run, true);
+			new CronJob('0 0 * * 0', plugin.run, null, true);
 			break;
 		default:
 			winston.warn('[plugin/tarsnap] Scheduling option not recognised: `' + plugin.settings.schedule + '`. Scheduling disabled.');
@@ -117,7 +117,7 @@ plugin.run = function (callback) {
 		function (next) {
 			exec('echo ' + plugin.settings.archiveFormat, next);
 		},
-		function (stdout) {
+		function (stdout, next) {
 			var archiveName = stdout.trim();
 			var args = buildArgs(['-cf', archiveName]);
 
