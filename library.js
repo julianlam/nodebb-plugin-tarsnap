@@ -4,6 +4,7 @@ var execFile = require('child_process').execFile;
 var exec = require('child_process').exec;
 var path = require('path');
 var async = require('async');
+var fs = require('fs');
 var CronJob = require('cron').CronJob;
 
 var meta = module.parent.require('./meta');
@@ -25,8 +26,10 @@ plugin.init = function (params, callback) {
 
 	router.get('/admin/plugins/tarsnap', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
 	router.get('/api/admin/plugins/tarsnap', controllers.renderAdminPage);
-	router.get('/api/admin/plugins/tarsnap/list', controllers.listArchives);
-	router.post('/api/admin/plugins/tarsnap/run', controllers.runArchive);
+	router.get('/api/admin/plugins/tarsnap/archive', controllers.listArchives);
+	router.post('/api/admin/plugins/tarsnap/archive', controllers.runArchive);
+	router.post('/api/admin/plugins/tarsnap/archive/delete', controllers.deleteArchives);
+	router.get('/api/admin/plugins/tarsnap/config', controllers.testConfig);
 
 	async.series([
 		async.apply(plugin.refreshSettings),
@@ -95,6 +98,28 @@ plugin.startJob = function (callback) {
 	}
 };
 
+plugin.testConfig = function (callback) {
+	async.series([
+		async.apply(plugin.refreshSettings),
+		function (next) {
+			async.parallel([
+				function (next) {
+					// Check executable is... executable
+					fs.access(plugin.settings.executable, fs.constants.F_OK | fs.constants.R_OK | fs.constants.X_OK, next);
+				},
+				function (next) {
+					// Check if keyfile is present and readable
+					fs.access(plugin.settings.keyfile, fs.constants.F_OK | fs.constants.R_OK, next);
+				},
+				function (next) {
+					// Check if cache directory is present and writable
+					fs.access(plugin.settings.cachedir, fs.constants.F_OK | fs.constants.R_OK | fs.constants.W_OK, next);
+				},
+			], next);
+		},
+	], callback);
+};
+
 plugin.list = function (callback) {
 	var args = buildArgs(['--list-archives']);
 
@@ -136,7 +161,26 @@ plugin.run = function (callback) {
 	], callback);
 };
 
-plugin.test = function () {};
+plugin.delete = function (archives, callback) {
+	var args = buildArgs(['-d']);
+
+	// Append to-be-deleted archives to arguments
+	archives.forEach(function (archive) {
+		winston.verbose('[plugin/tarsnap] Prepping deletion of archive: ' + archive);
+		args.push('-f', archive);
+	});
+
+	winston.verbose('[plugin/tarsnap] Executing deletion...');
+	execFile(plugin.settings.executable, args, function (err) {
+		if (err) {
+			winston.error('[plugin/tarsnap] Encountered error during delete: ' + err.message);
+		} else {
+			winston.verbose('[plugin/tarsnap] Deletion complete.');
+		}
+
+		callback.apply(this, arguments);
+	});
+};
 
 function buildArgs(args) {
 	if (plugin.settings.keyfile) {

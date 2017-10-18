@@ -8,7 +8,9 @@
 				for more information.
 			</p>
 			<button class="btn btn-primary" data-action="run">Run</button>
+			<button class="btn btn-default" data-action="test">Test Configuration</button>
 			<button class="btn btn-default" data-action="list">List Archives</button>
+			<button class="btn btn-danger" data-action="delete">Delete Archives <i class="fa fa-window-restore"></i></i></button>
 		</div>
 	</div>
 	

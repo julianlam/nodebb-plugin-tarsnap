@@ -2,8 +2,10 @@
 
 /* globals config, define, $, app, socket, bootbox */
 
-define('admin/plugins/tarsnap', ['settings'], function (Settings) {
-	var ACP = {};
+define('admin/plugins/tarsnap', ['settings', 'benchpress'], function (Settings, Benchpress) {
+	var ACP = {
+		_cache: {},
+	};
 
 	ACP.init = function () {
 		Settings.load('tarsnap', $('.tarsnap-settings'));
@@ -22,22 +24,6 @@ define('admin/plugins/tarsnap', ['settings'], function (Settings) {
 			});
 		});
 
-		function handleError(err) {
-			bootbox.alert({
-				title: 'Tarsnap sent back an error',
-				message: '<pre>' + err.responseJSON.error + '</pre>',
-				size: 'large',
-			});
-		}
-
-		function handleResponse(payload) {
-			bootbox.alert({
-				title: 'Tarsnap sent back this response',
-				message: '<pre>' + payload.response + '</pre>',
-				size: 'large',
-			});
-		}
-
 		$('button[data-action]').on('click', function (e) {
 			e.preventDefault();
 
@@ -46,18 +32,86 @@ define('admin/plugins/tarsnap', ['settings'], function (Settings) {
 			switch (action) {
 			case 'list':
 				app.alertSuccess('Sending command...');
-				$.get(config.relative_path + '/api/admin/plugins/tarsnap/list')
-					.done(handleResponse)
-					.fail(handleError);
+				$.get(config.relative_path + '/api/admin/plugins/tarsnap/archive')
+					.done(ACP.handleResponse)
+					.fail(ACP.handleError);
+				break;
+			case 'test':
+				$.get(config.relative_path + '/api/admin/plugins/tarsnap/config')
+					.done(ACP.handleResponse)
+					.fail(ACP.handleError);
 				break;
 			case 'run':
 				app.alertSuccess('Sending command...');
-				$.post(config.relative_path + '/api/admin/plugins/tarsnap/run')
-					.done(handleResponse)
-					.fail(handleError);
+				$.post(config.relative_path + '/api/admin/plugins/tarsnap/archive')
+					.done(ACP.handleResponse)
+					.fail(ACP.handleError);
+				break;
+			case 'delete':
+				ACP.openDeleteModal();
 				break;
 			}
 		});
+	};
+
+	ACP.handleError = function (err) {
+		bootbox.alert({
+			title: 'Tarsnap sent back an error',
+			message: '<pre>' + err.responseJSON.error + '</pre>',
+			size: 'large',
+		});
+	};
+
+	ACP.handleResponse = function (payload) {
+		if (payload.command === 'list') {
+			// Save a copy locally for use in delete modal
+			ACP._cache.archives = payload.response.split(/\r?\n/);
+		}
+
+		bootbox.alert({
+			title: 'Tarsnap sent back this response',
+			message: '<pre>' + payload.response + '</pre>',
+			size: 'large',
+		});
+	};
+
+	ACP.openDeleteModal = function () {
+		Benchpress.parse('admin/plugins/tarsnap/deleteModal', {
+			archives: ACP._cache.archives || [],
+		}, function (html) {
+			bootbox.dialog({
+				title: 'Delete Archives',
+				message: html,
+				size: 'large',
+				buttons: {
+					cancel: {
+						label: '[[modules:bootbox.cancel]]',
+						className: 'btn-link',
+					},
+					save: {
+						label: '[[modules:bootbox.confirm]]',
+						className: 'btn-primary',
+						callback: ACP.commitDelete,
+					},
+				},
+			});
+		});
+	};
+
+	ACP.commitDelete = function (evt) {
+		app.alertSuccess('Sending command...');
+		$(evt.delegateTarget).modal('hide');
+
+		var archives = $('#tarsnap-delete-modal-archive-list').val();
+
+		$.post({
+			url: config.relative_path + '/api/admin/plugins/tarsnap/archive/delete',
+			data: {
+				archives: archives,
+			},
+		}).done(ACP.handleResponse).fail(ACP.handleError);
+
+		return false;
 	};
 
 	return ACP;
