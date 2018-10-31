@@ -7,8 +7,8 @@ var async = require('async');
 var fs = require('fs');
 var CronJob = require('cron').CronJob;
 
-var meta = module.parent.require('./meta');
-var winston = module.parent.require('winston');
+var meta = require.main.require('./src/meta');
+var winston = require.main.require('winston');
 
 var controllers = require('./lib/controllers');
 
